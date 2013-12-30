@@ -19,6 +19,7 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 
 ALLOWED_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'tif', 'tiff']
 TIFF_EXTENSIONS = ['tif', 'tiff']
+ROOT = '/Users/jasonbalkman/Documents/PYEC2/PROJECTS/basic_bs/'
 
 @app.route('/')
 def hello_world():
@@ -28,7 +29,7 @@ def hello_world():
 @app.route('/process', methods=['POST'])
 def process_img():
    imgfile = request.args.get('imgfile')
-   imgfilefull = os.path.join('/Users/jasonbalkman/Documents/PYEC2/PROJECTS/basic/', imgfile)
+   imgfilefull = os.path.join(ROOT, imgfile)
    print "Processing Image: "+imgfile
    imgfilefull_split = imgfile.rsplit('.')
    imgfilefull_new = imgfilefull_split[0]+'_seg.'+imgfilefull_split[1]
@@ -56,7 +57,7 @@ def process_img():
 @app.route('/serve_img')
 def serve_img():
    fname = request.args.get('file')
-   full_path = os.path.join('/Users/jasonbalkman/Documents/PYEC2/PROJECTS/basic/', fname)
+   full_path = os.path.join(ROOT, fname)
    return send_file(full_path, mimetype='image/jpeg')
 
 @app.route('/upload', methods=['POST'])
@@ -94,4 +95,3 @@ def serve_pil_image(pil_img):
     img_io.seek(0)
     print "return send file..."
     return send_file(img_io, mimetype='image/jpeg')
-
