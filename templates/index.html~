@@ -1,0 +1,54 @@
+<!doctype html>
+
+<html>
+<head>
+
+<meta charset="utf-8" />
+<title>BREAST DENSITY ANALYSIS TOOL</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Bootstrap -->
+<link href="static/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- JQuery File Upload -->
+<link rel="stylesheet" href="static/css/styles.css" />
+
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
+<script type="text/javascript" src="static/js/jquery.filedrop.js"></script>
+<script type="text/javascript" src="static/js/display.js"></script>
+<script type="text/javascript" src="static/js/upload.js"></script>
+<script type="text/javascript" src="static/js/submit.js"></script>
+
+<!-- Include all compiled plugins (below), or include individual files as needed -->
+<script src="static/js/bootstrap.min.js"></script>
+
+</head>
+
+<body>
+
+  <p>BREAST DENSITY ANALYSIS TOOL</p>
+
+  <div>
+    <input id="processButton" type="submit" value="Process">
+  </div>
+
+  <!--<div id="imagebox">
+    <img src="static/example.jpg" alt="Example">
+  </div>-->
+
+  <div id="dropbox">
+    <span class="message">Drop images here to upload.</span>
+  </div>
+
+  <div id="canvasContainer" align="center" style="position:relative;">
+    <canvas id="myCanvas"></canvas>
+  </div>
+
+<script type="text/javascript">
+
+var curr_file = null;
+
+</script>
+
+</body>
+</html>
