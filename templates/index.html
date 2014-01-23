@@ -13,6 +13,9 @@
 <!-- Custom styles for carousel -->
 <link href="static/css/carousel.css" rel="stylesheet">
 
+<!-- My custom styles  -->
+<link href="static/css/customg.css" rel="stylesheet">
+
 <!-- JQuery File Upload -->
 <link rel="stylesheet" href="static/css/styles.css" />
 
@@ -21,6 +24,7 @@
 <script type="text/javascript" src="static/js/display.js"></script>
 <script type="text/javascript" src="static/js/upload.js"></script>
 <script type="text/javascript" src="static/js/submit.js"></script>
+<script type="text/javascript" src="static/js/init.js"></script>
 
 <!-- Include all compiled plugins (below), or include individual files as needed -->
 <script src="static/js/bootstrap.min.js"></script>
@@ -28,7 +32,6 @@
 </head>
 
 <body>
-
   <div class="navbar-wrapper">
     <div class="container">
       <div class="navbar navbar-inverse navbar-static-top" role="navigation">
@@ -62,12 +65,10 @@
             </ul>
           </div>
         </div>
-      </div>
-      
+      </div>    
     </div>
   </div>
-  
-  
+    
   <!-- Carousel 
        ================================================== -->
   <div id="myCarousel" class="carousel slide" data-ride="carousel">
@@ -79,7 +80,8 @@
     </ol>
     <div class="carousel-inner">
       <div class="item active">
-        <img data-src="holder.js/900x500/auto/#555:#5a5a5a/text:" alt="First slide">
+<!--        <img data-src="holder.js/900x500/auto/#555:#5a5a5a/text:" alt="First slide">-->
+        <img src="static/example.jpg" alt="First slide">
         <div class="container">
           <div class="carousel-caption">
             <h1>Cloud-based Breast Density</h1>
@@ -116,91 +118,68 @@
   <!-- Marketing messaging and featurettes
        ================================================== -->
   <!-- Wrap the rest of the page in another container to center all the content. -->
+
+  <div id="results-container" style="display:none">
+
+    <div class="container marketing">
+      <hr class="featurette-divider">
+      <h1>RESULTS</h1>
+      <div class="span7 text-center">    	
+	<table class="table table-striped table-bordered table-condensed">
+	  <thead align="center">
+	    <tr>
+	      <th>Quantitative Breast Density Analysis</th>
+	    </tr>
+	  </thead>
+	  <tbody align="left">
+	    <tr>
+	      <td>Side</td>
+	      <td>Left</td>
+	    </tr>
+	    <tr>
+	      <td>View</td>
+	      <td>MLO</td>
+	    </tr>
+	    <tr>
+	      <td>Percentage Fibroglandular Tissue</td>
+	      <td>60%</td>
+	    </tr>
+	    <tr>
+	      <td>Density Category</td>
+	      <td>Heterogenous</td>
+	    </tr>
+	  </tbody>
+	</table>
+      </div>
+    </div>
+    <div id="canvas-container">
+      <canvas id="my-canvas"></canvas>
+    </div>
+  </div>
   
   <div class="container marketing">
     
-    <!-- Three columns of text below the carousel -->
-    <div class="row">
-      <div>
-	<input id="processButton" type="submit" value="Process">
+    <hr class="featurette-divider">
+ 
+    <div class="span7 text-center">    
+            
+      <div id="loading-indicator" style="display:none">
+	<img src="static/img/ajaxloader.gif">
+	<h3>Please be patient while we analyze your mammogram.</h3>
+	<h3>This process may take several minutes.</h3>
+	<hr class="featurette-divider">
       </div>
       
-      <!--<div id="imagebox">
-	  <img src="static/example.jpg" alt="Example">
-      </div>-->
+      <div id="dropbox-container">
+	<h3>Drop any DICOM or TIFF mammogram file below and click the Analyze button.</h3>
+	<div id="dropbox">
+	  <span class="message">Drop images here to upload.</span>
+	</div>      
+	<p><a class="btn btn-lg btn-primary" id="processButton" role="button">ANALYZE MAMMOGRAM</a></p>
+      </div>
       
-      <div id="dropbox">
-	<span class="message">Drop images here to upload.</span>
-      </div>
     </div>
 
-    <div class="row">
-      <div id="canvasContainer" align="center" style="position:relative;">
-	<canvas id="myCanvas"></canvas>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="col-lg-4">
-        <img class="img-circle" data-src="holder.js/140x140" alt="Generic placeholder image">
-        <h2>Heading</h2>
-        <p>Donec sed odio dui. Etiam porta sem malesuada magna mollis euismod. Nullam id dolor id nibh ultricies vehicula ut id elit. Morbi leo risus, porta ac consectetur ac, vestibulum at eros. Praesent commodo cursus magna.</p>
-        <p><a class="btn btn-default" href="#" role="button">View details &raquo;</a></p>
-      </div><!-- /.col-lg-4 -->
-      <div class="col-lg-4">
-        <img class="img-circle" data-src="holder.js/140x140" alt="Generic placeholder image">
-        <h2>Heading</h2>
-        <p>Duis mollis, est non commodo luctus, nisi erat porttitor ligula, eget lacinia odio sem nec elit. Cras mattis consectetur purus sit amet fermentum. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh.</p>
-        <p><a class="btn btn-default" href="#" role="button">View details &raquo;</a></p>
-      </div><!-- /.col-lg-4 -->
-      <div class="col-lg-4">
-        <img class="img-circle" data-src="holder.js/140x140" alt="Generic placeholder image">
-        <h2>Heading</h2>
-        <p>Donec sed odio dui. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Vestibulum id ligula porta felis euismod semper. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.</p>
-        <p><a class="btn btn-default" href="#" role="button">View details &raquo;</a></p>
-      </div><!-- /.col-lg-4 -->
-    </div><!-- /.row -->
-    
-    <!-- START THE FEATURETTES -->
-    
-    <hr class="featurette-divider">
-    
-    <div class="row featurette">
-      <div class="col-md-7">
-        <h2 class="featurette-heading">First featurette heading. <span class="text-muted">It'll blow your mind.</span></h2>
-        <p class="lead">Donec ullamcorper nulla non metus auctor fringilla. Vestibulum id ligula porta felis euismod semper. Praesent commodo cursus magna, vel scelerisque nisl consectetur. Fusce dapibus, tellus ac cursus commodo.</p>
-      </div>
-      <div class="col-md-5">
-        <img class="featurette-image img-responsive" data-src="holder.js/500x500/auto" alt="Generic placeholder image">
-      </div>
-    </div>
-    
-    <hr class="featurette-divider">
-    
-    <div class="row featurette">
-      <div class="col-md-5">
-        <img class="featurette-image img-responsive" data-src="holder.js/500x500/auto" alt="Generic placeholder image">
-      </div>
-      <div class="col-md-7">
-        <h2 class="featurette-heading">Oh yeah, it's that good. <span class="text-muted">See for yourself.</span></h2>
-        <p class="lead">Donec ullamcorper nulla non metus auctor fringilla. Vestibulum id ligula porta felis euismod semper. Praesent commodo cursus magna, vel scelerisque nisl consectetur. Fusce dapibus, tellus ac cursus commodo.</p>
-      </div>
-    </div>
-    
-    <hr class="featurette-divider">
-    
-    <div class="row featurette">
-      <div class="col-md-7">
-        <h2 class="featurette-heading">And lastly, this one. <span class="text-muted">Checkmate.</span></h2>
-        <p class="lead">Donec ullamcorper nulla non metus auctor fringilla. Vestibulum id ligula porta felis euismod semper. Praesent commodo cursus magna, vel scelerisque nisl consectetur. Fusce dapibus, tellus ac cursus commodo.</p>
-      </div>
-      <div class="col-md-5">
-        <img class="featurette-image img-responsive" data-src="holder.js/500x500/auto" alt="Generic placeholder image">
-      </div>
-    </div>
-    
-    <hr class="featurette-divider">
-    
     <!-- /END THE FEATURETTES -->
         
     <!-- FOOTER -->
@@ -209,13 +188,6 @@
       <p>&copy; 2014 MOO Scans, Inc. &middot; <a href="#">Privacy</a> &middot; <a href="#">Terms</a></p>
     </footer>
     
-    </div><!-- /.container -->
-
-<script type="text/javascript">
-
-var curr_file = null;
-
-</script>
-
+  </div><!-- /.container -->
 </body>
 </html>

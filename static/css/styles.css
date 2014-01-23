@@ -19,18 +19,17 @@ body{
 
 #dropbox{
     border: 1px solid grey;
-	border-radius: 3px;
-	position: relative;
-	margin: 80px auto 90px;
-	min-height: 290px;
-	overflow: hidden;
-	padding-bottom: 40px;
+    border-radius: 3px;
+    position: relative;
+    margin: 80px auto 90px;
+    min-height: 290px;
+    overflow: hidden;
+    padding-bottom: 40px;
     width: 990px;
 }
 
-
 #dropbox .message{
-	font-size: 11px;
+    font-size: 11px;
     text-align: center;
     padding-top: 160px;
     display: block;
