@@ -23,7 +23,8 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 
 ALLOWED_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'tif', 'tiff', 'dcm']
 TIFF_EXTENSIONS = ['tif', 'tiff']
-ROOT = '/Users/jasonbalkman/Documents/PYEC2/PROJECTS/basic_bs/'
+#ROOT = '/Users/jasonbalkman/Documents/PYEC2/PROJECTS/basic_bs/'
+ROOT = '/var/www/breast-density/'
 DEBUG = True
 FILE = 'static/img/IM-0001-3033.tif'
 
@@ -179,7 +180,7 @@ def process_img():
    imgfilefullsplit_jpg = imgfilefull_jpg.split('/')
 
    #responsefile = imgfilefullsplit_jpg[-2]+'/'+imgfilefullsplit_jpg[-1]
-   responsefile = '/Users/jasonbalkman/Documents/PYEC2/PROJECTS/basic_bs/uploads/output.jpg'
+   responsefile = ROOT+'uploads/output.jpg'
 
    print "Response File: "+responsefile
    return jsonify({"success":True, "file": responsefile})
