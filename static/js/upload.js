@@ -22,6 +22,7 @@ $(function(){
 		alert("Context: "+context);
 	    }*/
 	    curr_file = response.file;
+	    //alert("Current file after drop: "+curr_file);
 	},
 	
     	error: function(err, file) {
