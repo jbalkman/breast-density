@@ -1,51 +1,58 @@
 $(function () {
 
     var img = null;
+    var ih = 1; // image height resized; arbitrarily init
     var canvas = document.getElementById('my-canvas');
+    var dropbox = document.getElementById('dropbox');
     var context = canvas.getContext('2d');
 
     function drawStuff() {
-	context.drawImage(img,0,0,canvas.width,canvas.height);
+	var iw = canvas.width - 350;
+	var s = iw/img.width;
+
+	ih = img.height*s;
+	canvas.height = ih;
+
+	context.drawImage(img,(canvas.width-iw)/2,0,iw,ih);
     }  
 
     $("#processButton").on("click",function(e) {
         e.preventDefault();
+
+	//alert("Curr File: "+curr_file);
+	
+	//if (curr_files.length > 0) {
 	
 	//alert("Current file after process button pressed: "+curr_file);
 	
 	$('#loading-indicator').show();
 	$('#dropbox-container').hide();
 	$('#results-container').hide();
-	/*
-	img = new Image();
-	img.src = "/process_serve?imgfile="+curr_file;
-	img.onload = function () {
-	    //alert("Image source from process serve routine: "+img.src);
-	    resizeCanvas();	    
-	    $('#loading-indicator').hide();
-	    $('#dropbox-container').show();
-	    $('#results-container').show();
-	}*/	
 	
 	$.ajax({
 	    type: "GET",
 	    url: "/process_serve?imgfile="+curr_file,
 	    data: {'message':'message'},
 	    
-	    success: function(resp){
-		img = new Image();
-		img.src = "data:image/jpeg;base64," + resp.imagefile;
-		img.onload = function () {
-		    //alert("Image source from process serve routine: "+img.src);
-		    resizeCanvas();	    
-		    $('#loading-indicator').hide();
-		    $('#dropbox-container').show();
-		    $('#results-container').show();
+	    success: function(resp) {
+		if (resp.success > 0) {
+		    img = new Image();
+		    img.src = "data:image/jpeg;base64," + resp.imagefile;
+		    img.onload = function () {
+			//alert("Image source from process serve routine: "+img.src);
+			resizeCanvas();	    
+		    }
+		    $("#DENSITY").html(resp.density);
+		    $("#DCAT").html(resp.dcat);
+		    $("#SIDE").html(resp.side);
+		    $("#VIEW").html(resp.view);
+		} else {
+		    alert("Sorry, there was an error processing the submitted image. Ensure that the mammogram file is of TIFF, JPEG, or DICOM format.");
 		}
-		$("#DENSITY").html(resp.density)
-		$("#DCAT").html(resp.dcat)
-		$("#SIDE").html(resp.side)
-		$("#VIEW").html(resp.view)
+		$('#loading-indicator').hide();
+		$('#dropbox-container').show();
+		$('#results-container').show();
+		removeImages();
 	    }
 	});
     }); 
@@ -85,6 +92,14 @@ $(function () {
 	    }
 	});
     }
+
+    function removeImages () {
+	var dropbox = $('#dropbox'),
+	message = $('.message', dropbox);
+	$('.preview').remove();
+	message.show();
+	curr_files = [];
+    }
     
     function resizeCanvas() {
         var prev_width = canvas.width;
@@ -92,7 +107,8 @@ $(function () {
         //var new_width = window.innerWidth*0.8;
 
 	canvas.width = new_width;
-	canvas.height = canvas.height * (new_width/prev_width);	
+	canvas.height = ih;
+	//canvas.height = canvas.height * (new_width/prev_width);	
         drawStuff(); 
     }
    

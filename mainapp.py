@@ -1,5 +1,6 @@
 # General
 import os
+import re
 import StringIO
 from datetime import datetime
 from flask import Flask, render_template, jsonify, redirect, url_for, request, send_file
@@ -9,8 +10,14 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 import mahotas
+import dicom
 
+# Image Drawing
+from PIL import ImageFont
+from PIL import ImageDraw
 from PIL import Image
+
+# Scientific Image Manipulation
 from scipy import ndimage
 from skimage.morphology import watershed, disk
 from skimage import data
@@ -19,12 +26,15 @@ from skimage.util import img_as_ubyte
 
 app = Flask(__name__)
 app.config.from_object(__name__)
+#app.config['UPLOAD_FOLDER'] = '/var/www/breast-density/uploads'
 app.config['UPLOAD_FOLDER'] = 'uploads'
 
-ALLOWED_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'tif', 'tiff', 'dcm']
+ALLOWED_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'tif', 'tiff', 'dcm', 'dicom']
 TIFF_EXTENSIONS = ['tif', 'tiff']
+DICOM_EXTENSIONS = ['dcm', 'dicom']
 DEBUG = True
 FILE = 'static/img/IM-0001-3033.tif'
+FONT_PATH = '/Library/Fonts/'
 
 # These may not be needed if we're dealing with relative files...seems ok to leave out
 #ROOT = '/Users/jasonbalkman/Documents/PYEC2/PROJECTS/basic_bs/'
@@ -39,24 +49,47 @@ def hello_world():
 def process_serve_img():
    imgfile = request.args.get('imgfile')
    print "Process/Serving Image: "+imgfile
-   imgprefix = imgfile.rsplit('.')[0]
+   fnamesplit = imgfile.rsplit('.')
+   imgprefix = fnamesplit[0]
+   ext = fnamesplit[1]
 
-   d, c, s, v = processFile(imgprefix) # returns density, density category, side, and view
+   # Initialize submitted variables
+   d = None
+   c  = None
+   s = None
+   v = None
+   data_encode = None
 
-   with open(imgprefix+"-out.jpg", "rb") as f: # the imgfile has been resaved as the results from the processing above, so there is no need to change the file
-      data = f.read()
-      print "Removing full path: "+imgfile
-      os.remove(imgprefix+"-out.jpg")
+   try:
+      d, c, s, v = processFile(imgfile) # returns density, density category, side, and view
+      result = 1
+   except:
+      result = 0
+   
+   try:
+      with open(imgprefix+"-out.jpg", "rb") as f: # the imgfile has been resaved as the results from the processing above, so there is no need to change the file
+         data = f.read()
+         data_encode = data.encode("base64")
+         print "Removing output file "+imgprefix+"-out.jpg"
+         os.remove(imgprefix+"-out.jpg")
+   except:
+      result = 0
 
    # Clean-up upload files so nothing is left on the server
-   try:
-      print "Removing Prefix Files: "+imgprefix
-      os.remove(imgprefix+'.jpg')
-      os.remove(imgprefix+'.tif')
+   print "Removing files for "+imgprefix+"."+ext
+   try: 
+      os.remove(imgprefix+"."+ext)
    except:
-      print "Unable to remove file "+imgprefix
-      
-   return jsonify({"success":True, "imagefile": data.encode("base64"), "density":d, "dcat":c, "side":s, "view":v})
+      print "Unable to remove files for "+imgprefix+"."+ext
+
+   # Since it was required to convert a dcm file to a tif we need to remove the latter as well
+   if 'dcm' in ext:
+      try:
+         os.remove(imgprefix+'.tif')
+      except:
+         print "Unable to remove files for "+imgprefix+"."+ext
+
+   return jsonify({"success":result, "imagefile":data_encode, "density":d, "dcat":c, "side":s, "view":v})
 
 @app.route('/upload', methods=['POST'])
 def upload():
@@ -67,15 +100,9 @@ def upload():
             ext = file.filename.rsplit('.', 1)[1]
             filename_noext = os.path.join(app.config['UPLOAD_FOLDER'], "%s" % (now.strftime("%Y-%m-%d-%H-%M-%S-%f")))
             filename_ext = filename_noext+'.'+ext
-            file.save(filename_ext) # saving the original filename ?needed
-            if istiff(file.filename):
-               im = Image.open(filename_ext)
-               filename_jpg = filename_noext+'.jpg'
-               im.save(filename_jpg) # saving the jpg file ?needed
-            else:
-               filename_jpg = filename_ext
+            file.save(filename_ext)
 
-            return jsonify({"success":True, "file": filename_jpg})
+            return jsonify({"success":True, "file": filename_ext})
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
@@ -83,14 +110,27 @@ def allowed_file(filename):
 def istiff(filename):
     return '.' in filename and filename.rsplit('.', 1)[1] in TIFF_EXTENSIONS
 
+def isdicom(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1] in DICOM_EXTENSIONS
+
 def processFile(f):
    
-   fname = f+".jpg"
-   fname_out = f+"-out.jpg"
-   
-   print "File to process: "+fname
+   # Handle DICOM
+   if isdicom(f):
+      ds = dicom.read_file(f)
+      fname = f.rsplit('.', 1)[0]+'.tif' # make a tiff file under the same name to read from
+      pil_dcm = get_dicom_PIL(ds)
+      pil_dcm.save(fname)
+   else:
+      fname = f
+
+   # Set output file name
+   fname_out = f.rsplit('.', 1)[0]+"-out.jpg"
+
+   # Open the image file for processing
+   print "File to process: "+fname      
    origimg = cv2.imread(fname, cv2.CV_LOAD_IMAGE_GRAYSCALE)
-   
+      
    # Chop off the top of the image b/c there is often noncontributory artifact & make numpy arrays
    img = origimg[25:,:]
    imarray = np.array(img)
@@ -265,54 +305,74 @@ def processFile(f):
    avg = (imcrop_fgt.sum()/otsubinary_sum).astype(int)
    print side, view, otsubinary_sum, segmented_sum, density, dcat, avg, avg/np.amax(imcrop_fgt), np.amax(imcrop_fgt)
     
-    # Create pil images
-   #pilimg = Image.fromarray(output2)
-   #pilimg.save(imgfilefull_new)
-   #pilimg.save(imgfilefull_jpg)
-    
-   #pil_imcrop_orig = Image.fromarray(imcrop_orig)
-   #pil_orig = Image.fromarray(img)
-   #pil_imcrop_min = Image.fromarray(output1)
+   # Create pil images
+   pil1 = Image.fromarray(imarray2)
+   pil2 = Image.fromarray(imcrop_fgt)
+   pil3 = Image.fromarray(contoursarray)
+   pil4 = Image.fromarray(maskarray)
 
-    # Plot a 4x4
-   pil_imarray2 = Image.fromarray(imarray2)
-   pil_segmented = Image.fromarray(maskarray)
-   pil_markup = Image.fromarray(contoursarray)
-   pil_fgt = Image.fromarray(imcrop_fgt)
-   
-   plt.figure(figsize=(20,10))
-   plt.subplot(1,4,1),plt.imshow(pil_imarray2,'gray')
-   plt.title('Original')
-   plt.subplot(1,4,2),plt.imshow(pil_segmented, 'gray')
-   plt.title('Breast Segmentation')
-   plt.subplot(1,4,3),plt.imshow(otsuint_out, 'gray')
-   plt.title('Fibroglandular Segmentation')
-   plt.subplot(1,4,4),plt.imshow(imcrop_fgt,'gray')
-   plt.title('Fibroglandular Tissue')
-    #plt.show()
+   # Pasting images above to a pil background along with text. There's a lot of particular measurements sizing the fonts & pictures so that everything fits.  It's somewhat arbitrary with lots of trial and error, but basically everything is based off the resized width of the first image.  Images needed to be resized down b/c they were too high resolution for canvas.
+   rf = 2 # rf = resize factor
 
-    # Plot a 2x2
-   '''pil_segmented = Image.fromarray(maskarray)
-   pil_markup = Image.fromarray(contoursarray)
-   
-   plt.figure(figsize=(20,20))
-   plt.subplot(1,2,1),plt.imshow(img,'gray')
-   plt.title('Original')
-   plt.subplot(1,2,2),plt.imshow(pil_markup)
-   plt.title('Contours')
-   plt.show()'''
+   w1,h1 = pil1.size
+   pil1_sm = pil1.resize((w1/rf,h1/rf))
+   w1_sm,h1_sm = pil1_sm.size
 
-   plt.savefig(fname_out)
+   pil2_sm = pil2.resize((w1_sm,h1_sm))
+   pil3_sm = pil3.resize((w1_sm,h1_sm))
+   pil4_sm = pil4.resize((w1_sm,h1_sm))
+
+   pil_backdrop = Image.new('L', (100+2*w1_sm,2*h1_sm+h1_sm/2), "white")
+
+   pil_backdrop.paste(pil1_sm, (0,h1_sm/8))
+   pil_backdrop.paste(pil2_sm, (100+w1_sm,h1_sm/8))
+   pil_backdrop.paste(pil3_sm, (0,h1_sm/4+h1_sm))
+   pil_backdrop.paste(pil4_sm, (100+w1_sm,h1_sm/4+h1_sm))
+
+   font = ImageFont.truetype(FONT_PATH+"Arial.ttf",w1_sm/18)
+
+   draw = ImageDraw.Draw(pil_backdrop)
+   draw.text((0,0),"Original Image",0,font=font)
+   draw.text((100+w1_sm,0),"Fibroglandular Tissue",0,font=font)
+   draw.text((0,h1_sm+h1_sm/6),"Breast Contouring",0,font=font)
+   draw.text((100+w1_sm,h1_sm+h1_sm/6),"Breast Segmentation",0,font=font)
+
+   pil_backdrop.save(fname_out)
     
    return density, dcat, side, view
+
+def get_LUT_value(data, window, level):
+    return np.piecewise(data,
+                        [data <= (level - 0.5 - (window - 1) / 2),
+                         data > (level - 0.5 + (window - 1) / 2)],
+                        [0, 255, lambda data: ((data - (level - 0.5)) / (window - 1) + 0.5) * (255 - 0)])
+
+# Display an image using the Python Imaging Library (PIL)
+def get_dicom_PIL(dataset):
+    if ('PixelData' not in dataset):
+        raise TypeError("Cannot show image -- DICOM dataset does not have pixel data")
+    if ('WindowWidth' not in dataset) or ('WindowCenter' not in dataset):  # can only apply LUT if these values exist
+        bits = dataset.BitsAllocated
+        samples = dataset.SamplesPerPixel
+        if bits == 8 and samples == 1:
+            mode = "L"
+        elif bits == 8 and samples == 3:
+            mode = "RGB"
+        elif bits == 16:
+            mode = "I;16"  # not sure about this -- PIL source says is 'experimental' and no documentation. Also, should bytes swap depending on endian of file and system??
+        else:
+            raise TypeError("Don't know PIL mode for %d BitsAllocated and %d SamplesPerPixel" % (bits, samples))
+
+        # PIL size = (width, height)
+        size = (dataset.Columns, dataset.Rows)
+
+        im = Image.frombuffer(mode, size, dataset.PixelData, "raw", mode, 0, 1)  # Recommended from the original code to specify all details by http://www.pythonware.com/library/pil/handbook/image.html; this is experimental...
+    else:
+        image = get_LUT_value(dataset.pixel_array, dataset.WindowWidth, dataset.WindowCenter)
+        im = Image.fromarray(np.uint8(image)).convert('L')  # Convert mode to L since LUT has only 256 values: http://www.pythonware.com/library/pil/handbook/image.htm
+
+    return im
 
 if __name__ == '__main__':
     app.run(debug=True)
 
-# Unused Functions
-def serve_pil_image(pil_img):
-    img_io = StringIO.StringIO()
-    pil_img.save(img_io, 'JPEG', quality=70)
-    img_io.seek(0)
-    print "return send file..."
-    return send_file(img_io, mimetype='image/jpeg')

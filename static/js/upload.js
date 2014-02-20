@@ -8,11 +8,11 @@ $(function(){
 
     dropbox.filedrop({
 	paramname: 'file',
-	maxfiles: 10,
+	maxfiles: 4,
     	maxfilesize: 20,
 	url: '/upload',
 	uploadFinished:function(i, file, response) {
-	    $.data(file).addClass('done')
+	    $.data(file).addClass('done');
 	    /*alert("Upload finished: "+response.file);
 	    var img = new Image();
 	    img.src = "/serve_img?file="+response.file;
@@ -22,6 +22,9 @@ $(function(){
 		alert("Context: "+context);
 	    }*/
 	    curr_file = response.file;
+
+	    //alert("My curr file = "+curr_file);
+
 	    //alert("Current file after drop: "+curr_file);
 	},
 	
@@ -42,7 +45,7 @@ $(function(){
 	},
 	
 	beforeEach: function(file){
-	    if(!file.type.match(/^image\//)){
+	    if(!(file.type.match(/^image\//) || file.type.match(/dicom/))){
 		alert('Only images are allowed!');
 		return false;
 	    }
@@ -55,7 +58,6 @@ $(function(){
 	progressUpdated: function(i, file, progress) {
 	    $.data(file).find('.progress').width(progress);
 	}
-    	
     });
     
     var template = '<div class="preview">'+
